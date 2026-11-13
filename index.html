@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Значки — раскладка на лист</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3a46f0">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{--bg:#e9edf3;--card:#fff;--ink:#121a2e;--mut:#5f6b82;--ac:#3a46f0;--acx:#fff;--br:#d3d9e4;--in:#f3f5f9;--bad:#d6334b;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#171e33;--ink:#eef1fa;--mut:#9aa6c1;--ac:#7c86ff;--acx:#0d1220;--br:#2a3350;--in:#0f1528;--bad:#ff6b82;color-scheme:dark}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(12px,env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom))}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 14px}
+.wrap{max-width:1100px;margin:0 auto}
+.cols{display:grid;gap:14px}
+@media(min-width:900px){.cols{grid-template-columns:420px 1fr;align-items:start}.right{position:sticky;top:12px}}
+.card{background:var(--card);border:1px solid var(--br);border-radius:14px;padding:14px;margin-bottom:14px}
+.card>summary{font-weight:650;cursor:pointer;list-style:none}
+.card>summary::-webkit-details-marker{display:none}
+.card>summary::after{content:"▾";float:right;color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+.ck{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:14px;min-height:44px}
+input,select,button{font:inherit;color:var(--ink)}
+input[type=number],select{background:var(--in);border:1px solid var(--br);border-radius:10px;padding:10px;min-height:44px;width:100%}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--ac)}
+button{border:1px solid var(--br);background:var(--in);border-radius:10px;padding:10px 14px;min-height:44px;cursor:pointer}
+button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:650}
+button:active{transform:scale(.97)}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+[hidden]{display:none!important}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px dashed var(--ac);border-radius:14px;padding:22px 14px;text-align:center;cursor:pointer;background:var(--card);margin-bottom:14px}
+.drop.on{background:var(--in)}
+.drop b{font-size:17px}.drop span{color:var(--mut);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{padding:6px 11px;min-height:36px;border-radius:999px}
+.chips button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.srow{display:flex;gap:8px;align-items:flex-end}.srow label{flex:1}
+.it{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--br)}
+.it:first-child{border-top:0}
+.th{width:76px;height:76px;flex:none;border-radius:10px;background:var(--in)}
+.f{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.nm{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row input[type=number]{width:84px}
+.st{display:flex;align-items:center;gap:4px}.st button{width:44px;padding:0}.st b{min-width:28px;text-align:center}
+.sm{padding:6px 10px;min-height:38px;font-size:13px}
+.x{color:var(--bad)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pv{background:#fff;display:block;width:100%;height:auto;border:1px solid var(--br);border-radius:4px;box-shadow:0 6px 24px rgba(18,26,46,.14)}
+.empty{color:var(--mut);text-align:center;padding:30px 10px}
+.warn{color:var(--bad);font-size:13px;margin:8px 0 0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--br);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;z-index:5}
+.bar .info{flex:1;font-size:13px;color:var(--mut);line-height:1.25}.bar .info b{color:var(--ink);font-size:15px}
+#ed,#st{position:fixed;inset:0;background:rgba(8,12,24,.86);z-index:20;display:flex;align-items:center;justify-content:center;padding:12px}
+.eb{background:var(--card);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px;align-items:center;max-width:100%}
+#ec{touch-action:none;border-radius:8px;background:#000;cursor:grab}
+#zr{width:100%;accent-color:var(--ac)}
+.eb .row{width:100%}.eb .row button{flex:1}
+.hint{margin:0;font-size:12px;color:var(--mut)}
+.tools{display:flex;gap:8px;margin-bottom:14px}
+.tools button{flex:1}
+.tools button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.sb{width:min(480px,100%);align-items:stretch;max-height:100%;overflow:auto}
+.sb .grid{margin-top:0}
+#pa{display:none}
+@media print{body>*:not(#pa){display:none!important}body{padding:0;background:#fff}#pa{display:block}#pa img{display:block;break-after:page}#pa img:last-child{break-after:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Значки на лист</h1>
+<p class="sub">Загрузи фото, подгони кадр — всё соберётся на листе для печати.</p>
+<div class="tools"><button id="sopen" aria-label="Настройки листа">⚙ Настройки</button><button id="cut" aria-pressed="true">✂ Контур реза</button></div>
+<div class="cols">
+<div class="left">
+<label class="drop" id="drop"><input type="file" id="file" accept="image/*" multiple hidden>
+<b>Добавить фото</b><span>Нажми или перетащи сюда. Можно сразу много.</span></label>
+
+
+<div class="card" id="listcard" hidden><div id="list"></div><div class="row" style="margin-top:8px"><button class="sm x" id="clear">Очистить всё</button></div></div>
+
+<div id="st" hidden><div class="eb sb"><b>Настройки листа</b>
+<div><div class="srow"><label>Размер значка, мм (для новых фото)<input type="number" id="gsize" inputmode="decimal" min="5" max="300" step="0.5"></label><button id="all">Применить ко всем</button></div>
+<div class="chips" id="chips"></div></div>
+<div class="grid">
+<label>Бумага<select id="paper"><option value="A4">A4 (210×297)</option><option value="A3">A3 (297×420)</option><option value="A5">A5 (148×210)</option><option value="Letter">Letter</option><option value="13x18">13×18 см</option><option value="custom">Свой размер</option></select></label>
+<label class="ck"><input type="checkbox" id="land">Альбомная</label>
+<label id="cw1" hidden>Ширина, мм<input type="number" id="cw" inputmode="decimal"></label>
+<label id="ch1" hidden>Высота, мм<input type="number" id="ch" inputmode="decimal"></label>
+<label>Поля, мм<input type="number" id="margin" inputmode="decimal" min="0" step="0.5"></label>
+<label>Промежуток, мм<input type="number" id="gap" inputmode="decimal" min="0" step="0.5"></label>
+<label>Вылет под обрез, мм<input type="number" id="bleed" inputmode="decimal" min="0" step="0.5"></label>
+<label>Форма<select id="shape"><option value="circle">Круг</option><option value="round">Скруглённый квадрат</option><option value="square">Квадрат</option></select></label>
+</div><div class="row"><button class="pri" id="so">Готово</button></div></div></div>
+</div>
+
+<div class="right card">
+<div class="nav"><button id="pp" aria-label="Предыдущий лист">‹</button><b id="pl">—</b><button id="pn" aria-label="Следующий лист">›</button></div>
+<div id="pv"></div>
+<p class="warn" id="warn" hidden></p>
+</div>
+</div>
+</div>
+
+<div class="bar"><div class="info"><b id="cnt">0 значков</b><br><span id="pgs">0 листов</span></div>
+<button id="png">PNG</button><button class="pri" id="prn">Печать</button></div>
+
+<div id="ed" hidden><div class="eb"><canvas id="ec"></canvas>
+<input type="range" id="zr" min="1" max="8" step="0.01" aria-label="Масштаб">
+<p class="hint">Тяни — двигать. Два пальца или колесо — масштаб. Тёмное будет обрезано.</p>
+<div class="row"><button id="er">Сбросить</button><button class="pri" id="eo">Готово</button></div></div></div>
+<div id="pa"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const PAPER={A4:[210,297],A3:[297,420],A5:[148,210],Letter:[216,279],'13x18':[130,180]};
+const KEYS=['paper','land','cw','ch','margin','gap','bleed','shape'];
+let S={size:44,paper:'A4',land:false,cw:210,ch:297,margin:8,gap:2,bleed:3,cut:true,shape:'circle'};
+try{Object.assign(S,JSON.parse(localStorage.getItem('badge-settings')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('badge-settings',JSON.stringify(S))}catch(e){}};
+let items=[],uid=0,page=0,editing=null;
+
+/* ---------- геометрия ---------- */
+const cropS=it=>Math.min(it.src.width,it.src.height)/it.zoom;
+function clamp(it){const s=cropS(it);it.cx=Math.min(Math.max(it.cx,s/2),it.src.width-s/2);it.cy=Math.min(Math.max(it.cy,s/2),it.src.height-s/2)}
+function shapePath(c,x,y,d,sh,keep){if(!keep)c.beginPath();if(sh==='circle'){c.moveTo(x+d,y+d/2);c.arc(x+d/2,y+d/2,d/2,0,Math.PI*2)}else if(sh==='round')c.roundRect(x,y,d,d,d*.22);else c.rect(x,y,d,d)}
+/* d — сторона квадрата с вылетом в px, D — то же в мм */
+function drawBadge(c,it,x,y,d,D,noCut){
+  const s=cropS(it);c.save();shapePath(c,x,y,d,S.shape);c.clip();
+  c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,x,y,d,d);c.restore();
+  if(S.cut&&!noCut){const dc=d*it.size/D,o=(d-dc)/2;c.save();const k=d/D;shapePath(c,x+o,y+o,dc,S.shape);c.lineWidth=Math.max(2,k*.5);c.strokeStyle='rgba(255,255,255,.95)';c.stroke();c.lineWidth=Math.max(1,k*.22);c.strokeStyle='#000';c.stroke();c.restore()}
+}
+function paperMM(){const[w,h]=S.paper==='custom'?[S.cw,S.ch]:PAPER[S.paper];return S.land?[h,w]:[w,h]}
+function layout(){
+  const[pw,ph]=paperMM(),m=S.margin,g=S.gap,W=pw-2*m,H=ph-2*m,list=[];
+  items.forEach(it=>{for(let i=0;i<it.copies;i++)list.push({it,d:it.size+2*S.bleed})});
+  list.sort((a,b)=>b.d-a.d);
+  let pages=[[]],x=0,y=0,rh=0,bad=0;
+  for(const p of list){
+    if(p.d>W+1e-6||p.d>H+1e-6){bad++;continue}
+    if(x>0&&x+p.d>W+1e-6){x=0;y+=rh+g;rh=0}
+    if(y+p.d>H+1e-6){pages.push([]);x=0;y=0;rh=0}
+    p.x=m+x;p.y=m+y;pages[pages.length-1].push(p);x+=p.d+g;rh=Math.max(rh,p.d)
+  }
+  return{pw,ph,pages,bad,total:list.length-bad}
+}
+function renderPage(L,i,dpi){
+  const k=dpi/25.4,c=document.createElement('canvas');c.width=Math.round(L.pw*k);c.height=Math.round(L.ph*k);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+  L.pages[i].forEach(p=>drawBadge(x,p.it,p.x*k,p.y*k,p.d*k,p.d));return c
+}
+
+/* ---------- предпросмотр ---------- */
+let tm;const refresh=()=>{clearTimeout(tm);tm=setTimeout(draw,50)};
+let L=null;
+function draw(){
+  L=layout();page=Math.min(page,L.pages.length-1);
+  const n=L.total;
+  $('#cnt').textContent=n+' '+(n%10===1&&n%100!==11?'значок':[2,3,4].includes(n%10)&&![12,13,14].includes(n%100)?'значка':'значков');
+  $('#pgs').textContent=(n?L.pages.length:0)+' лист.  ·  '+L.pw+'×'+L.ph+' мм';
+  $('#pl').textContent=n?'Лист '+(page+1)+' из '+L.pages.length:'—';
+  $('#pp').disabled=page<=0;$('#pn').disabled=page>=L.pages.length-1;
+  $('#warn').hidden=!L.bad;$('#warn').textContent=L.bad?L.bad+' шт. не помещаются на лист — уменьши размер или вылет.':'';
+  const pv=$('#pv');pv.innerHTML='';
+  if(!n){pv.innerHTML='<div class="empty">Здесь появится лист. Добавь фото, чтобы начать.</div>';return}
+  const c=renderPage(L,page,150);c.className='pv';pv.appendChild(c)
+}
+$('#pp').onclick=()=>{page--;draw()};$('#pn').onclick=()=>{page++;draw()};
+
+/* ---------- список ---------- */
+function thumb(it){const c=it.th;if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);drawBadge(x,it,0,0,c.width,1,true)}
+function renderList(){
+  const el=$('#list');el.innerHTML='';$('#listcard').hidden=!items.length;
+  items.forEach(it=>{
+    const d=document.createElement('div');d.className='it';d.dataset.id=it.id;
+    d.innerHTML=`<canvas class="th" width="152" height="152"></canvas><div class="f"><div class="nm"></div>
+    <div class="row"><label style="flex-direction:row;align-items:center;gap:6px">мм<input type="number" class="sz" inputmode="decimal" min="5" step="0.5"></label>
+    <div class="st"><button data-a="mn" aria-label="Меньше копий">−</button><b class="cp"></b><button data-a="pl" aria-label="Больше копий">+</button></div></div>
+    <div class="row"><button class="sm" data-a="ed">Кадр</button><button class="sm x" data-a="rm">Убрать</button></div></div>`;
+    d.querySelector('.nm').textContent=it.name;d.querySelector('.sz').value=it.size;d.querySelector('.cp').textContent='×'+it.copies;
+    it.th=d.querySelector('.th');thumb(it);el.appendChild(d)
+  })
+}
+const byId=e=>{const d=e.target.closest('.it');return d&&items.find(i=>i.id==d.dataset.id)};
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const it=byId(e);if(!it)return;
+  const a=b.dataset.a;
+  if(a==='pl')it.copies++;else if(a==='mn')it.copies=Math.max(0,it.copies-1);
+  else if(a==='rm'){items=items.filter(i=>i!==it);delBlobs([it.id]);persist();renderList();draw();return}
+  else if(a==='ed'){openEd(it);return}
+  b.closest('.it').querySelector('.cp').textContent='×'+it.copies;refresh();persist()
+});
+$('#list').addEventListener('input',e=>{
+  if(!e.target.classList.contains('sz'))return;const it=byId(e),v=parseFloat(e.target.value);
+  if(it&&v>=5){it.size=v;setSize(v,true);refresh();persist()}
+});
+$('#clear').onclick=()=>{if(confirm('Убрать все фото?')){delBlobs(items.map(i=>i.id));items=[];persist();renderList();draw()}};
+
+/* ---------- размер по умолчанию ---------- */
+const SIZES=[25,32,37,44,56,58,75];
+function setSize(v,fromItem){S.size=v;save();$('#gsize').value=v;markChips()}
+function markChips(){document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',+b.dataset.v===S.size))}
+SIZES.forEach(v=>{const b=document.createElement('button');b.textContent=v;b.dataset.v=v;b.onclick=()=>setSize(v);$('#chips').appendChild(b)});
+$('#gsize').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(v>=5){S.size=v;save();markChips()}});
+$('#all').onclick=()=>{items.forEach(i=>i.size=S.size);persist();renderList();draw()};
+
+/* ---------- загрузка ---------- */
+function loadImg(f,noBlob){return new Promise((res,rej)=>{const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const k=Math.min(1,3000/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');
+    c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);noBlob?res({c}):c.toBlob(b=>res({c,b}),'image/jpeg',.92)};
+  im.onerror=()=>rej();im.src=u})}
+async function addFiles(fs){
+  let bad=0;
+  for(const f of fs){if(!f.type.startsWith('image/'))continue;
+    try{const{c:src,b}=await loadImg(f);const it={id:++uid,name:f.name,src,blob:b,size:S.size,copies:1,zoom:1,cx:src.width/2,cy:src.height/2};items.push(it);putBlob(it)}catch(e){bad++}}
+  if(bad)alert('Не удалось открыть файлов: '+bad);persist();
+  renderList();draw()
+}
+$('#file').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+const dz=$('#drop');
+['dragover','dragenter'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('on')}));
+['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('on')}));
+dz.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
+
+/* ---------- редактор кадра ---------- */
+const ec=$('#ec'),zr=$('#zr');
+function openEd(it){
+  editing=it;const z=Math.max(220,Math.min(innerWidth-56,innerHeight-250,460)),r=devicePixelRatio||1;
+  ec.style.width=ec.style.height=z+'px';ec.width=ec.height=Math.round(z*r);zr.value=it.zoom;$('#ed').hidden=false;drawEd()
+}
+function drawEd(){
+  const it=editing,c=ec.getContext('2d'),n=ec.width,s=cropS(it),D=it.size+2*S.bleed;
+  c.clearRect(0,0,n,n);c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,0,0,n,n);
+  c.save();c.fillStyle='rgba(0,0,0,.62)';c.beginPath();c.rect(0,0,n,n);shapePath(c,0,0,n,S.shape,true);c.fill('evenodd');c.restore();
+  const dc=n*it.size/D,o=(n-dc)/2;c.save();c.strokeStyle='#fff';c.lineWidth=Math.max(2,n/180);c.setLineDash([n/40,n/60]);shapePath(c,o,o,dc,S.shape);c.stroke();c.restore()
+}
+function setZoom(z){editing.zoom=Math.min(8,Math.max(1,z));zr.value=editing.zoom;clamp(editing)}
+const pts=new Map();let pd=0;const dist=()=>{const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])};
+ec.addEventListener('pointerdown',e=>{ec.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pts.size===2?dist():0});
+ec.addEventListener('pointermove',e=>{
+  const o=pts.get(e.pointerId);if(!o)return;const n=[e.clientX,e.clientY];
+  if(pts.size===1){const k=cropS(editing)/ec.clientWidth;editing.cx-=(n[0]-o[0])*k;editing.cy-=(n[1]-o[1])*k;pts.set(e.pointerId,n)}
+  else{pts.set(e.pointerId,n);if(pts.size===2){const d=dist();if(pd)setZoom(editing.zoom*d/pd);pd=d}}
+  clamp(editing);drawEd()
+});
+['pointerup','pointercancel'].forEach(t=>ec.addEventListener(t,e=>{pts.delete(e.pointerId);pd=0}));
+ec.addEventListener('wheel',e=>{e.preventDefault();setZoom(editing.zoom*(e.deltaY<0?1.1:.91));drawEd()},{passive:false});
+zr.oninput=()=>{setZoom(+zr.value);drawEd()};
+$('#er').onclick=()=>{editing.zoom=1;editing.cx=editing.src.width/2;editing.cy=editing.src.height/2;zr.value=1;drawEd()};
+$('#eo').onclick=()=>{$('#ed').hidden=true;thumb(editing);editing=null;refresh();persist()};
+
+/* ---------- настройки ---------- */
+function cust(){const c=S.paper==='custom';$('#cw1').hidden=$('#ch1').hidden=!c}
+KEYS.forEach(k=>{
+  const e=$('#'+k),ck=e.type==='checkbox';ck?e.checked=S[k]:e.value=S[k];
+  e.addEventListener('input',()=>{S[k]=ck?e.checked:e.type==='number'?(parseFloat(e.value)||0):e.value;save();cust();if(k==='shape')items.forEach(thumb);refresh()})
+});
+$('#gsize').value=S.size;markChips();cust();
+$('#sopen').onclick=()=>{$('#st').hidden=false};
+const cutB=$('#cut');
+const cutUI=()=>{cutB.classList.toggle('on',!!S.cut);cutB.setAttribute('aria-pressed',!!S.cut)};
+cutB.onclick=()=>{S.cut=!S.cut;save();cutUI();refresh()};
+cutUI();
+const closeSt=()=>{$('#st').hidden=true};
+$('#so').onclick=closeSt;
+$('#st').addEventListener('click',e=>{if(e.target.id==='st')closeSt()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSt();if(editing)$('#eo').click()}});
+
+/* ---------- печать и экспорт ---------- */
+function ready(){L=layout();if(!L.total){alert('Сначала добавь фото.');return false}return true}
+$('#prn').onclick=async()=>{
+  if(!ready())return;const pa=$('#pa');pa.innerHTML='';
+  let st=$('#pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}
+  st.textContent=`@page{size:${L.pw}mm ${L.ph}mm;margin:0}`;
+  const ims=L.pages.map((_,i)=>{const im=new Image();im.src=renderPage(L,i,300).toDataURL('image/jpeg',.95);im.style.cssText=`width:${L.pw}mm;height:${L.ph}mm`;pa.appendChild(im);return im.decode().catch(()=>{})});
+  await Promise.all(ims);window.print()
+};
+$('#png').onclick=()=>{
+  if(!ready())return;
+  renderPage(L,page,300).toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='badges-sheet-'+(page+1)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)},'image/png')
+};
+/* ---------- автосохранение (IndexedDB) ---------- */
+const DB=new Promise((res,rej)=>{const r=indexedDB.open('badges',1);
+  r.onupgradeneeded=()=>{r.result.createObjectStore('items',{keyPath:'id'});r.result.createObjectStore('blobs')};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function idb(store,mode,fn){const db=await DB;return new Promise((res,rej)=>{const t=db.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)})}
+let sv;
+function persist(){clearTimeout(sv);sv=setTimeout(()=>{
+  idb('items','readwrite',s=>{s.clear();items.forEach((it,i)=>s.put({id:it.id,order:i,name:it.name,size:it.size,copies:it.copies,zoom:it.zoom,cx:it.cx,cy:it.cy}))}).catch(()=>{})},300)}
+const putBlob=it=>idb('blobs','readwrite',s=>s.put(it.blob,it.id)).catch(()=>{});
+const delBlobs=ids=>idb('blobs','readwrite',s=>{ids.forEach(i=>s.delete(i))}).catch(()=>{});
+async function restore(){
+  try{
+    const metas=(await idb('items','readonly',s=>s.getAll())).sort((a,b)=>a.order-b.order);
+    for(const m of metas){
+      const b=await idb('blobs','readonly',s=>s.get(m.id));if(!b)continue;
+      const{c}=await loadImg(b,true);
+      items.push({id:m.id,name:m.name,size:m.size,copies:m.copies,zoom:m.zoom,cx:m.cx,cy:m.cy,src:c,blob:b});
+      uid=Math.max(uid,m.id)
+    }
+    renderList();draw()
+  }catch(e){}
+}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+draw();restore();
+</script>
+</body>
+</html>
