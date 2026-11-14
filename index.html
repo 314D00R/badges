@@ -52,6 +52,7 @@ button:active{transform:scale(.97)}
 .st{display:flex;align-items:center;gap:4px}.st button{width:44px;padding:0}.st b{min-width:28px;text-align:center}
 .sm{padding:6px 10px;min-height:38px;font-size:13px}
 .x{color:var(--bad)}
+.sm.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .pv{background:#fff;display:block;width:100%;height:auto;border:1px solid var(--br);border-radius:4px;box-shadow:0 6px 24px rgba(18,26,46,.14)}
 .empty{color:var(--mut);text-align:center;padding:30px 10px}
@@ -113,6 +114,7 @@ button:active{transform:scale(.97)}
 <button id="png">PNG</button><button class="pri" id="prn">Печать</button></div>
 
 <div id="ed" hidden><div class="eb"><canvas id="ec"></canvas>
+<button id="em" style="width:100%"></button>
 <input type="range" id="zr" min="1" max="8" step="0.01" aria-label="Масштаб">
 <p class="hint">Тяни — двигать. Два пальца или колесо — масштаб. Тёмное будет обрезано.</p>
 <div class="row"><button id="er">Сбросить</button><button class="pri" id="eo">Готово</button></div></div></div>
@@ -134,7 +136,14 @@ function shapePath(c,x,y,d,sh,keep){if(!keep)c.beginPath();if(sh==='circle'){c.m
 /* d — сторона квадрата с вылетом в px, D — то же в мм */
 function drawBadge(c,it,x,y,d,D,noCut){
   const s=cropS(it);c.save();shapePath(c,x,y,d,S.shape);c.clip();
-  c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,x,y,d,d);c.restore();
+  if(it.fit){
+    const w=it.src.width,h=it.src.height,m=Math.min(w,h);
+    c.drawImage(it.src,w/2-m/2,h/2-m/2,m,m,x,y,d,d);
+    const dc=d*it.size/D,o=(d-dc)/2,k=dc/Math.max(w,h)*(it.fz||1);
+    c.save();shapePath(c,x+o,y+o,dc,S.shape);c.clip();
+    c.drawImage(it.src,x+d/2-w*k/2+(it.fx||0)*d,y+d/2-h*k/2+(it.fy||0)*d,w*k,h*k);c.restore()
+  }else c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,x,y,d,d);
+  c.restore();
   if(S.cut&&!noCut){const dc=d*it.size/D,o=(d-dc)/2;c.save();const k=d/D;shapePath(c,x+o,y+o,dc,S.shape);c.lineWidth=Math.max(2,k*.5);c.strokeStyle='rgba(255,255,255,.95)';c.stroke();c.lineWidth=Math.max(1,k*.22);c.strokeStyle='#000';c.stroke();c.restore()}
 }
 function paperMM(){const[w,h]=S.paper==='custom'?[S.cw,S.ch]:PAPER[S.paper];return S.land?[h,w]:[w,h]}
@@ -175,7 +184,7 @@ function draw(){
 $('#pp').onclick=()=>{page--;draw()};$('#pn').onclick=()=>{page++;draw()};
 
 /* ---------- список ---------- */
-function thumb(it){const c=it.th;if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);drawBadge(x,it,0,0,c.width,1,true)}
+function thumb(it){const c=it.th;if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);drawBadge(x,it,0,0,c.width,it.size+2*S.bleed,true)}
 function renderList(){
   const el=$('#list');el.innerHTML='';$('#listcard').hidden=!items.length;
   items.forEach(it=>{
@@ -183,9 +192,9 @@ function renderList(){
     d.innerHTML=`<canvas class="th" width="152" height="152"></canvas><div class="f"><div class="nm"></div>
     <div class="row"><label style="flex-direction:row;align-items:center;gap:6px">мм<input type="number" class="sz" inputmode="decimal" min="5" step="0.5"></label>
     <div class="st"><button data-a="mn" aria-label="Меньше копий">−</button><b class="cp"></b><button data-a="pl" aria-label="Больше копий">+</button></div></div>
-    <div class="row"><button class="sm" data-a="ed">Кадр</button><button class="sm x" data-a="rm">Убрать</button></div></div>`;
+    <div class="row"><button class="sm" data-a="ed">Кадр</button><button class="sm" data-a="fit">Вписать</button><button class="sm x" data-a="rm">Убрать</button></div></div>`;
     d.querySelector('.nm').textContent=it.name;d.querySelector('.sz').value=it.size;d.querySelector('.cp').textContent='×'+it.copies;
-    it.th=d.querySelector('.th');thumb(it);el.appendChild(d)
+    it.th=d.querySelector('.th');d.querySelector('[data-a=fit]').classList.toggle('on',!!it.fit);thumb(it);el.appendChild(d)
   })
 }
 const byId=e=>{const d=e.target.closest('.it');return d&&items.find(i=>i.id==d.dataset.id)};
@@ -194,12 +203,13 @@ $('#list').addEventListener('click',e=>{
   const a=b.dataset.a;
   if(a==='pl')it.copies++;else if(a==='mn')it.copies=Math.max(0,it.copies-1);
   else if(a==='rm'){items=items.filter(i=>i!==it);delBlobs([it.id]);persist();renderList();draw();return}
+  else if(a==='fit'){it.fit=!it.fit;b.classList.toggle('on',it.fit);thumb(it);refresh();persist();return}
   else if(a==='ed'){openEd(it);return}
   b.closest('.it').querySelector('.cp').textContent='×'+it.copies;refresh();persist()
 });
 $('#list').addEventListener('input',e=>{
   if(!e.target.classList.contains('sz'))return;const it=byId(e),v=parseFloat(e.target.value);
-  if(it&&v>=5){it.size=v;setSize(v,true);refresh();persist()}
+  if(it&&v>=5){it.size=v;setSize(v,true);thumb(it);refresh();persist()}
 });
 $('#clear').onclick=()=>{if(confirm('Убрать все фото?')){delBlobs(items.map(i=>i.id));items=[];persist();renderList();draw()}};
 
@@ -219,7 +229,7 @@ function loadImg(f,noBlob){return new Promise((res,rej)=>{const u=URL.createObje
 async function addFiles(fs){
   let bad=0;
   for(const f of fs){if(!f.type.startsWith('image/'))continue;
-    try{const{c:src,b}=await loadImg(f);const it={id:++uid,name:f.name,src,blob:b,size:S.size,copies:1,zoom:1,cx:src.width/2,cy:src.height/2};items.push(it);putBlob(it)}catch(e){bad++}}
+    try{const{c:src,b}=await loadImg(f);const it={id:++uid,name:f.name,src,blob:b,size:S.size,copies:1,zoom:1,cx:src.width/2,cy:src.height/2,fit:false,fz:1,fx:0,fy:0};items.push(it);putBlob(it)}catch(e){bad++}}
   if(bad)alert('Не удалось открыть файлов: '+bad);persist();
   renderList();draw()
 }
@@ -233,34 +243,41 @@ dz.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
 const ec=$('#ec'),zr=$('#zr');
 function openEd(it){
   editing=it;const z=Math.max(220,Math.min(innerWidth-56,innerHeight-250,460)),r=devicePixelRatio||1;
-  ec.style.width=ec.style.height=z+'px';ec.width=ec.height=Math.round(z*r);zr.value=it.zoom;$('#ed').hidden=false;drawEd()
+  ec.style.width=ec.style.height=z+'px';ec.width=ec.height=Math.round(z*r);$('#ed').hidden=false;modeUI();drawEd()
 }
 function drawEd(){
   const it=editing,c=ec.getContext('2d'),n=ec.width,s=cropS(it),D=it.size+2*S.bleed;
-  c.clearRect(0,0,n,n);c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,0,0,n,n);
+  c.clearRect(0,0,n,n);
+  if(it.fit)drawBadge(c,it,0,0,n,D,true);else c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,0,0,n,n);
   c.save();c.fillStyle='rgba(0,0,0,.62)';c.beginPath();c.rect(0,0,n,n);shapePath(c,0,0,n,S.shape,true);c.fill('evenodd');c.restore();
   const dc=n*it.size/D,o=(n-dc)/2;c.save();c.strokeStyle='#fff';c.lineWidth=Math.max(2,n/180);c.setLineDash([n/40,n/60]);shapePath(c,o,o,dc,S.shape);c.stroke();c.restore()
 }
-function setZoom(z){editing.zoom=Math.min(8,Math.max(1,z));zr.value=editing.zoom;clamp(editing)}
+const zv=()=>editing.fit?(editing.fz||1):editing.zoom;
+function modeUI(){const e=editing;$('#em').textContent=e.fit?'Режим: вписать целиком':'Режим: заполнить круг';zr.min=e.fit?.3:1;zr.max=e.fit?2:8;zr.value=zv()}
+function setZoom(z){const e=editing;if(e.fit)e.fz=Math.min(2,Math.max(.3,z));else{e.zoom=Math.min(8,Math.max(1,z));clamp(e)}zr.value=zv()}
 const pts=new Map();let pd=0;const dist=()=>{const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])};
 ec.addEventListener('pointerdown',e=>{ec.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pts.size===2?dist():0});
 ec.addEventListener('pointermove',e=>{
   const o=pts.get(e.pointerId);if(!o)return;const n=[e.clientX,e.clientY];
-  if(pts.size===1){const k=cropS(editing)/ec.clientWidth;editing.cx-=(n[0]-o[0])*k;editing.cy-=(n[1]-o[1])*k;pts.set(e.pointerId,n)}
-  else{pts.set(e.pointerId,n);if(pts.size===2){const d=dist();if(pd)setZoom(editing.zoom*d/pd);pd=d}}
+  if(pts.size===1){
+    if(editing.fit){editing.fx=(editing.fx||0)+(n[0]-o[0])/ec.clientWidth;editing.fy=(editing.fy||0)+(n[1]-o[1])/ec.clientWidth}
+    else{const k=cropS(editing)/ec.clientWidth;editing.cx-=(n[0]-o[0])*k;editing.cy-=(n[1]-o[1])*k}
+    pts.set(e.pointerId,n)}
+  else{pts.set(e.pointerId,n);if(pts.size===2){const d=dist();if(pd)setZoom(zv()*d/pd);pd=d}}
   clamp(editing);drawEd()
 });
 ['pointerup','pointercancel'].forEach(t=>ec.addEventListener(t,e=>{pts.delete(e.pointerId);pd=0}));
-ec.addEventListener('wheel',e=>{e.preventDefault();setZoom(editing.zoom*(e.deltaY<0?1.1:.91));drawEd()},{passive:false});
+ec.addEventListener('wheel',e=>{e.preventDefault();setZoom(zv()*(e.deltaY<0?1.1:.91));drawEd()},{passive:false});
 zr.oninput=()=>{setZoom(+zr.value);drawEd()};
-$('#er').onclick=()=>{editing.zoom=1;editing.cx=editing.src.width/2;editing.cy=editing.src.height/2;zr.value=1;drawEd()};
-$('#eo').onclick=()=>{$('#ed').hidden=true;thumb(editing);editing=null;refresh();persist()};
+$('#er').onclick=()=>{editing.zoom=1;editing.cx=editing.src.width/2;editing.cy=editing.src.height/2;editing.fz=1;editing.fx=0;editing.fy=0;modeUI();drawEd()};
+$('#em').onclick=()=>{editing.fit=!editing.fit;modeUI();drawEd()};
+$('#eo').onclick=()=>{$('#ed').hidden=true;editing=null;renderList();refresh();persist()};
 
 /* ---------- настройки ---------- */
 function cust(){const c=S.paper==='custom';$('#cw1').hidden=$('#ch1').hidden=!c}
 KEYS.forEach(k=>{
   const e=$('#'+k),ck=e.type==='checkbox';ck?e.checked=S[k]:e.value=S[k];
-  e.addEventListener('input',()=>{S[k]=ck?e.checked:e.type==='number'?(parseFloat(e.value)||0):e.value;save();cust();if(k==='shape')items.forEach(thumb);refresh()})
+  e.addEventListener('input',()=>{S[k]=ck?e.checked:e.type==='number'?(parseFloat(e.value)||0):e.value;save();cust();if(k==='shape'||k==='bleed')items.forEach(thumb);refresh()})
 });
 $('#gsize').value=S.size;markChips();cust();
 $('#sopen').onclick=()=>{$('#st').hidden=false};
@@ -293,7 +310,7 @@ const DB=new Promise((res,rej)=>{const r=indexedDB.open('badges',1);
 async function idb(store,mode,fn){const db=await DB;return new Promise((res,rej)=>{const t=db.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)})}
 let sv;
 function persist(){clearTimeout(sv);sv=setTimeout(()=>{
-  idb('items','readwrite',s=>{s.clear();items.forEach((it,i)=>s.put({id:it.id,order:i,name:it.name,size:it.size,copies:it.copies,zoom:it.zoom,cx:it.cx,cy:it.cy}))}).catch(()=>{})},300)}
+  idb('items','readwrite',s=>{s.clear();items.forEach((it,i)=>s.put({id:it.id,order:i,name:it.name,size:it.size,copies:it.copies,zoom:it.zoom,cx:it.cx,cy:it.cy,fit:!!it.fit,fz:it.fz||1,fx:it.fx||0,fy:it.fy||0}))}).catch(()=>{})},300)}
 const putBlob=it=>idb('blobs','readwrite',s=>s.put(it.blob,it.id)).catch(()=>{});
 const delBlobs=ids=>idb('blobs','readwrite',s=>{ids.forEach(i=>s.delete(i))}).catch(()=>{});
 async function restore(){
@@ -302,7 +319,7 @@ async function restore(){
     for(const m of metas){
       const b=await idb('blobs','readonly',s=>s.get(m.id));if(!b)continue;
       const{c}=await loadImg(b,true);
-      items.push({id:m.id,name:m.name,size:m.size,copies:m.copies,zoom:m.zoom,cx:m.cx,cy:m.cy,src:c,blob:b});
+      items.push({id:m.id,name:m.name,size:m.size,copies:m.copies,zoom:m.zoom,cx:m.cx,cy:m.cy,fit:!!m.fit,fz:m.fz||1,fx:m.fx||0,fy:m.fy||0,src:c,blob:b});
       uid=Math.max(uid,m.id)
     }
     renderList();draw()
