@@ -26,7 +26,12 @@
   }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;overscroll-behavior-y:contain;overflow-x:hidden;width:100%}
+html,body{margin:0;padding:0;overscroll-behavior-y:contain;overflow-x:hidden;width:100%;touch-action:pan-x pan-y}
+button,a,label,input,select{touch-action:manipulation}
+#ptr{position:fixed;left:50%;top:0;z-index:50;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:var(--card);box-shadow:0 4px 14px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:var(--ac);font-size:20px;transform:translateY(-60px);opacity:0;pointer-events:none}
+#ptr.go{transition:transform .2s,opacity .2s}
+#ptr.spin span{animation:ptrs .7s linear infinite;display:inline-block}
+@keyframes ptrs{to{transform:rotate(360deg)}}
 body{
   background:var(--bg);color:var(--ink);
   font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
@@ -97,10 +102,11 @@ input[type=color]{width:34px;height:34px;border:1px solid var(--br);border-radiu
 
 /* Main Layout */
 .wrap{max-width:1180px;margin:0 auto;padding:10px 12px 14px}
-.cols{display:grid;gap:14px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.left-col,.right-col,.pane,.card{min-width:0;max-width:100%}
 @media(min-width:920px){
   .tabs{display:none}
-  .cols{grid-template-columns:410px 1fr;align-items:start}
+  .cols{grid-template-columns:410px minmax(0,1fr);align-items:start}
   .pane{display:block!important}
   .left-col{display:flex;flex-direction:column;gap:12px}
   .right-col{position:sticky;top:76px}
@@ -155,7 +161,7 @@ input[type=color]{width:34px;height:34px;border:1px solid var(--br);border-radiu
 .nav b{font-size:14px;min-width:86px;text-align:center}
 .sheet-stage{
   position:relative;display:flex;justify-content:center;align-items:center;
-  background:var(--in);border-radius:12px;padding:8px;overflow:hidden;
+  background:var(--in);border-radius:12px;padding:8px;overflow:hidden;touch-action:none;
 }
 #pvCanvas{
   display:block;max-width:100%;height:auto;background:#fff;
@@ -167,11 +173,10 @@ input[type=color]{width:34px;height:34px;border:1px solid var(--br);border-radiu
 
 /* Floating Context Toolbar for Selected Free Image */
 .ctx-bar{
-  margin-top:10px;padding:8px;border-radius:14px;
+  margin-bottom:8px;padding:8px;border-radius:14px;
   background:var(--card2);border:1px solid var(--br);
-  display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
+  display:flex;gap:6px;flex-wrap:wrap;
 }
-.ctx-bar::-webkit-scrollbar{display:none}
 .ctx-bar button{flex:none;min-height:36px;padding:6px 10px;font-size:12px;border-radius:10px}
 
 /* Fixed Bottom Action Bar */
@@ -214,8 +219,9 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
 .ed-canvas-wrap{
   display:flex;justify-content:center;align-items:center;
   background:#0a0e17;border-radius:14px;padding:8px;position:relative;
+  touch-action:none;overflow:hidden;flex:none;
 }
-#ec,#fc{touch-action:none;border-radius:8px;max-width:100%;cursor:grab}
+#ec,#fc{touch-action:none;border-radius:8px;display:block;flex:none;cursor:grab}
 .fit-opts{
   background:var(--card2);border:1px solid var(--br);border-radius:14px;
   padding:10px;display:flex;flex-direction:column;gap:8px;
@@ -242,6 +248,7 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
 </style>
 </head>
 <body>
+<div id="ptr"><span>↻</span></div>
 
 <header class="hdr">
   <div class="hdr-in">
@@ -337,10 +344,6 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
           </div>
         </div>
 
-        <div class="sheet-stage" id="stage">
-          <canvas id="pvCanvas"></canvas>
-        </div>
-
         <div class="ctx-bar" id="ctxBar" hidden>
           <button class="pri" id="ctxEdit">Редактор</button>
           <button id="ctxAuto">В пустое место</button>
@@ -350,10 +353,14 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
           <button id="ctxUp">Вперёд</button>
           <button class="bad" id="ctxDel">Удалить</button>
         </div>
-        <div class="sl-row" id="ctxSizeWrap" hidden style="margin-top:8px;padding:0 4px">
+        <div class="sl-row" id="ctxSizeWrap" hidden style="margin-bottom:8px;padding:0 4px">
           <span>Размер</span>
           <input type="range" id="ctxSize" min="12" max="220" step="1" value="60">
           <span id="ctxSizeV">60 мм</span>
+        </div>
+
+        <div class="sheet-stage" id="stage">
+          <canvas id="pvCanvas"></canvas>
         </div>
 
         <p class="sheet-hint" id="sheetHint">Нажми на картинку, чтобы двигать, крутить и менять размер двумя пальцами.</p>
@@ -538,7 +545,7 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
     <!-- Tab: Color & Study Note Filters -->
     <div id="ft-tune" hidden style="display:flex;flex-direction:column;gap:6px">
       <div class="row">
-        <button class="sm soft" id="fePresetBW" style="flex:1">Ч/Б для конспекта (чёткий)</button>
+        <button class="sm soft" id="fePresetBW" style="flex:1">Ч/Б (чёткий)</button>
         <button class="sm" id="feTuneReset">Сброс</button>
       </div>
       <div class="sl-row"><span>Яркость</span><input type="range" id="feBright" min="-60" max="60" value="0"><span id="feBrightV">0</span></div>
@@ -879,7 +886,8 @@ function draw(){
   $('#warn').hidden=!L.bad;$('#warn').textContent=L.bad?`${L.bad} шт. не помещаются на лист — уменьши размер или вылет.`:'';
 
   const pv=$('#pvCanvas');
-  const stageW=Math.max(240,($('#stage').clientWidth||340)-16);
+  const vw=document.documentElement.clientWidth||innerWidth;
+  const stageW=Math.max(220,Math.min(($('#stage').clientWidth||340)-16,vw-48));
   const dpr=Math.min(2,devicePixelRatio||1);
   const cssW=Math.min(stageW,520);
   const cssH=Math.round(cssW*(L.ph/L.pw));
@@ -890,6 +898,8 @@ function draw(){
 
   const sel=freeItems.find(f=>f.id===selectedFreeId&&(f.page||0)===page);
   $('#ctxBar').hidden=!sel;
+  $('#ctxSizeWrap').hidden=!sel;
+  if(sel){$('#ctxSize').value=Math.round(sel.w);$('#ctxSizeV').textContent=Math.round(sel.w)+' мм'}
 }
 $('#pp').onclick=()=>{page--;selectedFreeId=null;draw()};
 $('#pn').onclick=()=>{page++;selectedFreeId=null;draw()};
@@ -1034,6 +1044,7 @@ $('#ctxDup').onclick=()=>{
   renderFreeList();draw();persistFree();
 };
 $('#ctxRot').onclick=()=>{const f=getSelFree();if(!f)return;f.rot=((f.rot||0)+90)%360;draw();persistFree()};
+$('#ctxAlign').onclick=()=>{const f=getSelFree();if(!f)return;f.rot=(Math.round((f.rot||0)/90)*90)%360;draw();persistFree()};
 $('#ctxUp').onclick=()=>{
   const idx=freeItems.findIndex(f=>f.id===selectedFreeId);
   if(idx>=0&&idx<freeItems.length-1){const[it]=freeItems.splice(idx,1);freeItems.push(it);renderFreeList();draw();persistFree()}
@@ -1182,16 +1193,35 @@ setupDrop($('#dropFree'),addFreeImages);
 
 /* ---------- Badge Frame Editor (with Fit Shape/Bg Controls) ---------- */
 const ec=$('#ec'),zr=$('#zr');
+let edPreviewSrc=null,edFilt=null,edFiltKey='';
+function edTab(t){
+  $$('#edTabs button').forEach(x=>x.classList.toggle('on',x.dataset.et===t));
+  $('#et-crop').hidden=t!=='crop';$('#et-tune').hidden=t!=='tune';
+}
 function openEd(it){
-  editing=it;
-  const z=Math.max(210,Math.min(innerWidth-56,innerHeight-340,380)),r=devicePixelRatio||1;
+  editing=it;edFilt=null;edFiltKey='';
+  edPreviewSrc=buildFePreview(it);
+  const vw=document.documentElement.clientWidth||innerWidth;
+  const z=Math.round(Math.max(200,Math.min(vw-56,innerHeight*.34,340))),r=Math.min(2,devicePixelRatio||1);
   ec.style.width=ec.style.height=z+'px';ec.width=ec.height=Math.round(z*r);
+  edTab('crop');
   $('#ed').hidden=false;modeUI();drawEd();
+}
+function edFiltered(){
+  const it=editing,key=[it.bright||0,it.contrast||0,it.sat||0,!!it.bw].join();
+  if(key==='0,0,0,false')return edPreviewSrc;
+  if(edFiltKey!==key||!edFilt){edFilt=applyFiltersToCanvas(edPreviewSrc,it);edFiltKey=key}
+  return edFilt;
 }
 function drawEd(){
   const it=editing,c=ec.getContext('2d'),n=ec.width,s=cropS(it),D=it.size+2*S.bleed;
   c.clearRect(0,0,n,n);
-  if(it.fit)drawBadge(c,it,0,0,n,D,true);else c.drawImage(it.src,it.cx-s/2,it.cy-s/2,s,s,0,0,n,n);
+  if(it.fit)drawBadge(c,it,0,0,n,D,true,edPreviewSrc);
+  else{
+    const src=edFiltered(),k=src.width/it.src.width;
+    c.save();c.globalAlpha=it.opacity??1;
+    c.drawImage(src,(it.cx-s/2)*k,(it.cy-s/2)*k,s*k,s*k,0,0,n,n);c.restore();
+  }
   const bgSh=it.fit&&it.fitBgShape&&it.fitBgShape!=='inherit'?it.fitBgShape:S.shape;
   c.save();c.fillStyle='rgba(0,0,0,.6)';c.beginPath();c.rect(0,0,n,n);shapePath(c,0,0,n,n,bgSh,true);c.fill('evenodd');c.restore();
   const dc=n*it.size/D,o=(n-dc)/2;
@@ -1235,7 +1265,19 @@ ec.addEventListener('wheel',e=>{e.preventDefault();setZoom(zv()*(e.deltaY<0?1.1:
 zr.oninput=()=>{setZoom(+zr.value);drawEd()};
 $('#er').onclick=()=>{editing.zoom=1;editing.cx=editing.src.width/2;editing.cy=editing.src.height/2;editing.fz=1;editing.fx=0;editing.fy=0;modeUI();drawEd()};
 $('#em').onclick=()=>{editing.fit=!editing.fit;modeUI();drawEd()};
-$('#eo').onclick=()=>{$('#ed').hidden=true;editing=null;renderList();refresh();persistBadges()};
+function edColorUI(){
+  const e=editing;if(!e)return;
+  const v={Bright:e.bright||0,Contrast:e.contrast||0,Sat:e.sat||0,Op:Math.round((e.opacity??1)*100)};
+  for(const k in v){$('#ed'+k).value=v[k];$('#ed'+k+'V').textContent=v[k]+(k==='Op'?'%':'')}
+  $('#edPresetBW').classList.toggle('on',!!e.bw);
+}
+$$('#edTabs button').forEach(b=>b.onclick=()=>{edTab(b.dataset.et);if(b.dataset.et==='tune')edColorUI()});
+$('#edPresetBW').onclick=()=>{const e=editing;if(!e)return;e.bw=!e.bw;if(e.bw){e.contrast=Math.max(e.contrast||0,25)}else{e.contrast=0}edColorUI();drawEd()};
+$('#edTuneReset').onclick=()=>{const e=editing;if(!e)return;e.bright=e.contrast=e.sat=0;e.bw=false;e.opacity=1;edColorUI();drawEd()};
+[['Bright','bright'],['Contrast','contrast'],['Sat','sat'],['Op','opacity']].forEach(([k,p])=>{
+  $('#ed'+k).oninput=ev=>{const e=editing;if(!e)return;const v=+ev.target.value;e[p]=k==='Op'?v/100:v;$('#ed'+k+'V').textContent=v+(k==='Op'?'%':'');drawEd()};
+});
+$('#eo').onclick=()=>{$('#ed').hidden=true;if(editing){editing._fKey=null;editing._fCanvas=null}editing=null;edPreviewSrc=edFilt=null;renderList();refresh();persistBadges()};
 
 /* ---------- Free Image Editor Modal ---------- */
 const fc=$('#fc');
@@ -1283,13 +1325,16 @@ function openFreeEd(fi){
   editingFree=fi;
   feAspectMode='free';
   fePreviewSrc=buildFePreview(fi);
-  const maxW=Math.min(innerWidth-52,420),maxH=Math.min(innerHeight*.28,220);
+  const vw=document.documentElement.clientWidth||innerWidth;
+  const maxW=Math.min(vw-52,420),maxH=Math.min(innerHeight*.28,220);
   const asp=fi.src.width/fi.src.height;
   let w=maxW,h=w/asp;
   if(h>maxH){h=maxH;w=h*asp}
   const r=Math.min(2,devicePixelRatio||1);
   fc.style.width=Math.round(w)+'px';fc.style.height=Math.round(h)+'px';
   fc.width=Math.round(w*r);fc.height=Math.round(h*r);
+  $$('#feTabs button').forEach(x=>x.classList.toggle('on',x.dataset.ft==='crop'));
+  ['crop','tune','size'].forEach(t=>$('#ft-'+t).hidden=t!=='crop');
   $('#fe').hidden=false;
   syncFreeEdUI();drawFreeEd();
 }
@@ -1542,6 +1587,46 @@ async function restore(){
     renderList();renderFreeList();draw();
   }catch(e){}
 }
+
+/* ---------- Global Anti-Zoom & Pull-to-Refresh ---------- */
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>{if(e.cancelable)e.preventDefault()},{passive:false}));
+document.addEventListener('touchmove',e=>{
+  if(e.touches&&e.touches.length>1&&e.cancelable)e.preventDefault();
+},{passive:false});
+[ec,fc].forEach(el=>['touchstart','touchmove'].forEach(ev=>el.addEventListener(ev,e=>{if(e.cancelable)e.preventDefault()},{passive:false})));
+
+(()=>{
+  const ptr=$('#ptr');let sy=0,dy=0,act=false;
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1||window.scrollY>2){act=false;return}
+    const t=e.target;
+    if(t.closest('#pvCanvas,#stage,.modal,#ec,#fc,input[type=range]')){act=false;return}
+    sy=e.touches[0].clientY;dy=0;act=true;ptr.classList.remove('go','spin');
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!act||e.touches.length!==1)return;
+    if(window.scrollY>2){act=false;return}
+    dy=e.touches[0].clientY-sy;
+    if(dy>6){
+      if(e.cancelable)e.preventDefault();
+      const y=Math.min(72,dy*.55)-48;
+      ptr.style.transform=`translateY(${y}px) rotate(${dy*2.2}deg)`;
+      ptr.style.opacity=Math.min(1,dy/75);
+    }
+  },{passive:false});
+  const end=()=>{
+    if(!act)return;act=false;ptr.classList.add('go');
+    if(dy>78){
+      ptr.classList.add('spin');ptr.style.transform='translateY(14px)';ptr.style.opacity=1;
+      setTimeout(()=>location.reload(),180);
+    }else{
+      ptr.style.transform='translateY(-60px)';ptr.style.opacity=0;
+    }
+    dy=0;
+  };
+  document.addEventListener('touchend',end,{passive:true});
+  document.addEventListener('touchcancel',end,{passive:true});
+})();
 
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
