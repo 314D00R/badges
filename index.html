@@ -173,11 +173,12 @@ input[type=color]{width:34px;height:34px;border:1px solid var(--br);border-radiu
 
 /* Floating Context Toolbar for Selected Free Image */
 .ctx-bar{
-  margin-bottom:8px;padding:8px;border-radius:14px;
+  margin-bottom:6px;padding:6px;border-radius:12px;
   background:var(--card2);border:1px solid var(--br);
-  display:flex;gap:6px;flex-wrap:wrap;
+  display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;align-items:center;
 }
-.ctx-bar button{flex:none;min-height:36px;padding:6px 10px;font-size:12px;border-radius:10px}
+.ctx-bar::-webkit-scrollbar{display:none}
+.ctx-bar button{flex:none;min-height:33px;padding:5px 9px;font-size:12px;border-radius:9px}
 
 /* Fixed Bottom Action Bar */
 .bar{
@@ -346,17 +347,18 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
 
         <div class="ctx-bar" id="ctxBar" hidden>
           <button class="pri" id="ctxEdit">Редактор</button>
-          <button id="ctxAuto">В пустое место</button>
           <button id="ctxAlign" title="Выровнять параллельно краям">⊞ Выровнять</button>
           <button id="ctxRot">↻ 90°</button>
+          <button id="ctxAuto">В пустое</button>
           <button id="ctxDup">Дубль</button>
           <button id="ctxUp">Вперёд</button>
           <button class="bad" id="ctxDel">Удалить</button>
         </div>
-        <div class="sl-row" id="ctxSizeWrap" hidden style="margin-bottom:8px;padding:0 4px">
+        <div class="sl-row" id="ctxSizeWrap" hidden style="margin-bottom:6px;padding:0 4px;grid-template-columns:52px 1fr 44px auto">
           <span>Размер</span>
           <input type="range" id="ctxSize" min="12" max="220" step="1" value="60">
           <span id="ctxSizeV">60 мм</span>
+          <button class="xs soft" id="ctxClose" title="Снять выделение">✓ Готово</button>
         </div>
 
         <div class="sheet-stage" id="stage">
@@ -371,7 +373,7 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
 </div>
 
 <!-- BOTTOM BAR -->
-<div class="bar">
+<div class="bar" id="botBar">
   <div class="info">
     <b id="cnt">0 значков</b>
     <span id="pgs">1 лист · A4</span>
@@ -589,6 +591,7 @@ function setTab(t){
   $$('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   ['sheet','badges','free'].forEach(k=>$('#pane-'+k).classList.toggle('on',k===t));
   if(t==='sheet')refresh();
+  else $('#botBar').hidden=false;
 }
 $$('.seg button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
@@ -899,6 +902,7 @@ function draw(){
   const sel=freeItems.find(f=>f.id===selectedFreeId&&(f.page||0)===page);
   $('#ctxBar').hidden=!sel;
   $('#ctxSizeWrap').hidden=!sel;
+  $('#botBar').hidden=!!(sel&&activeTab==='sheet');
   if(sel){$('#ctxSize').value=Math.round(sel.w);$('#ctxSizeV').textContent=Math.round(sel.w)+' мм'}
 }
 $('#pp').onclick=()=>{page--;selectedFreeId=null;draw()};
@@ -1054,6 +1058,7 @@ $('#ctxDel').onclick=()=>{
   delBlobs([selectedFreeId]);freeItems=freeItems.filter(f=>f.id!==selectedFreeId);
   selectedFreeId=null;renderFreeList();draw();persistFree();
 };
+$('#ctxClose').onclick=()=>{selectedFreeId=null;draw()};
 
 /* ---------- Badges List ---------- */
 function thumb(it){const c=it.th;if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);drawBadge(x,it,0,0,c.width,it.size+2*S.bleed,true)}
