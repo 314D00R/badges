@@ -190,13 +190,16 @@ input[type=color]{width:34px;height:34px;border:1px solid var(--br);border-radiu
 .modal{
   position:fixed;inset:0;z-index:30;background:rgba(6,10,20,.72);
   backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;
+  overflow:hidden;touch-action:none;
 }
 @media(min-width:640px){.modal{align-items:center;padding:16px}}
 .sheet-box{
-  background:var(--card);width:min(520px,100%);max-height:92dvh;overflow-y:auto;
+  background:var(--card);width:100%;max-width:520px;max-height:94dvh;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;touch-action:pan-y;
   border-radius:22px 22px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom));
-  display:flex;flex-direction:column;gap:12px;box-shadow:0 -8px 40px rgba(0,0,0,.28);
+  display:flex;flex-direction:column;gap:10px;box-shadow:0 -8px 40px rgba(0,0,0,.28);
 }
+.sheet-box>*{flex-shrink:0}
 @media(min-width:640px){.sheet-box{border-radius:20px;padding:16px}}
 .m-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .m-hdr b{font-size:16px}
@@ -346,6 +349,11 @@ label.ck{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)
           <button id="ctxDup">Дубль</button>
           <button id="ctxUp">Вперёд</button>
           <button class="bad" id="ctxDel">Удалить</button>
+        </div>
+        <div class="sl-row" id="ctxSizeWrap" hidden style="margin-top:8px;padding:0 4px">
+          <span>Размер</span>
+          <input type="range" id="ctxSize" min="12" max="220" step="1" value="60">
+          <span id="ctxSizeV">60 мм</span>
         </div>
 
         <p class="sheet-hint" id="sheetHint">Нажми на картинку, чтобы двигать, крутить и менять размер двумя пальцами.</p>
@@ -901,13 +909,17 @@ function toLocal(fi,mx,my){
 function hitFree(mx,my){
   const pageFree=freeItems.filter(f=>(f.page||0)===page);
   const sel=pageFree.find(f=>f.id===selectedFreeId);
-  const tol=Math.max(6,16/pvK*(devicePixelRatio||1));
+  const cssScale=pv.getBoundingClientRect().width/L.pw||1;
+  const tol=Math.min(7.5,Math.max(4,14/cssScale));
   if(sel){
     const lp=toLocal(sel,mx,my);
     const rotDist=Math.max(18,pvK*6)/pvK;
-    if(Math.hypot(lp.x,lp.y-(-sel.h/2-rotDist))<tol*1.2)return{fi:sel,mode:'rot'};
-    const corners=[[-sel.w/2,-sel.h/2],[sel.w/2,-sel.h/2],[sel.w/2,sel.h/2],[-sel.w/2,sel.h/2]];
-    for(const[cx,cy]of corners){if(Math.hypot(lp.x-cx,lp.y-cy)<tol*1.2)return{fi:sel,mode:'resize'}}
+    if(Math.hypot(lp.x,lp.y-(-sel.h/2-rotDist))<tol*1.25)return{fi:sel,mode:'rot'};
+    // Only hit corner resize if outside inner 55% of image
+    if(Math.abs(lp.x)>sel.w*.28||Math.abs(lp.y)>sel.h*.28){
+      const corners=[[-sel.w/2,-sel.h/2],[sel.w/2,-sel.h/2],[sel.w/2,sel.h/2],[-sel.w/2,sel.h/2]];
+      for(const[cx,cy]of corners){if(Math.hypot(lp.x-cx,lp.y-cy)<tol*1.15)return{fi:sel,mode:'resize'}}
+    }
   }
   for(let i=pageFree.length-1;i>=0;i--){
     const f=pageFree[i],lp=toLocal(f,mx,my);
@@ -916,9 +928,14 @@ function hitFree(mx,my){
   return null;
 }
 
+['touchstart','touchmove','gesturestart','gesturechange'].forEach(ev=>{
+  pv.addEventListener(ev,e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+  $('#stage').addEventListener(ev,e=>{if(e.touches&&e.touches.length>1&&e.cancelable)e.preventDefault()},{passive:false});
+});
+
 pv.addEventListener('pointerdown',e=>{
   if(!L)return;
-  pv.setPointerCapture(e.pointerId);
+  try{pv.setPointerCapture(e.pointerId)}catch(_){}
   shPts.set(e.pointerId,[e.clientX,e.clientY]);
   const pt=canvasToMM(e.clientX,e.clientY);
   if(shPts.size===1){
@@ -938,7 +955,7 @@ pv.addEventListener('pointerdown',e=>{
       const ang=Math.atan2(a[1][1]-a[0][1],a[1][0]-a[0][0])*180/Math.PI;
       const mid=canvasToMM((a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2);
       shMode='pinch';
-      shStart={fi,d:Math.max(10,d),ang,midX:mid.x,midY:mid.y,fx:fi.x,fy:fi.y,fw:fi.w,fh:fi.h,frot:fi.rot||0};
+      shStart={fi,d:Math.max(20,d),ang,midX:mid.x,midY:mid.y,fx:fi.x,fy:fi.y,fw:fi.w,fh:fi.h,frot:fi.rot||0};
     }
   }
 });
@@ -951,42 +968,60 @@ pv.addEventListener('pointermove',e=>{
     const pt=canvasToMM(e.clientX,e.clientY);
     if(shMode==='move'){
       let nx=shStart.fx+(pt.x-shStart.mx),ny=shStart.fy+(pt.y-shStart.my);
-      // Gentle snap to sheet center
       if(Math.abs(nx-L.pw/2)<2.5)nx=L.pw/2;
       if(Math.abs(ny-L.ph/2)<2.5)ny=L.ph/2;
       fi.x=nx;fi.y=ny;
     }else if(shMode==='resize'){
-      const d0=Math.max(4,Math.hypot(shStart.mx-fi.x,shStart.my-fi.y));
-      const d1=Math.max(4,Math.hypot(pt.x-fi.x,pt.y-fi.y));
-      const sc=Math.max(.15,Math.min(6,d1/d0));
-      fi.w=Math.max(8,shStart.fw*sc);fi.h=Math.max(8,shStart.fh*sc);
+      const d0=Math.max(6,Math.hypot(shStart.mx-fi.x,shStart.my-fi.y));
+      const d1=Math.max(6,Math.hypot(pt.x-fi.x,pt.y-fi.y));
+      const sc=Math.max(.2,Math.min(5,d1/d0));
+      fi.w=Math.max(10,Math.min(L.pw*1.4,shStart.fw*sc));
+      fi.h=Math.max(10,Math.min(L.ph*1.4,shStart.fh*sc));
     }else if(shMode==='rot'){
       const a0=Math.atan2(shStart.my-fi.y,shStart.mx-fi.x);
       const a1=Math.atan2(pt.y-fi.y,pt.x-fi.x);
       let deg=shStart.frot+(a1-a0)*180/Math.PI;
-      // Snap to 0/90/180/-90
       for(const snap of[0,90,180,-90,-180]){if(Math.abs(((deg-snap+540)%360)-180)<4){deg=snap;break}}
       fi.rot=Math.round(deg*10)/10;
     }
     renderSheetToCanvas(pv,L,page,pvK,true);
   }else if(shPts.size===2&&shMode==='pinch'){
     const a=[...shPts.values()];
-    const d=Math.max(10,Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]));
+    const d=Math.max(20,Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]));
     const ang=Math.atan2(a[1][1]-a[0][1],a[1][0]-a[0][0])*180/Math.PI;
     const mid=canvasToMM((a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2);
-    const sc=Math.max(.2,Math.min(5,d/shStart.d));
-    fi.w=Math.max(8,shStart.fw*sc);fi.h=Math.max(8,shStart.fh*sc);
+    const sc=Math.max(.25,Math.min(4,d/shStart.d));
+    fi.w=Math.max(10,Math.min(L.pw*1.4,shStart.fw*sc));
+    fi.h=Math.max(10,Math.min(L.ph*1.4,shStart.fh*sc));
     fi.rot=shStart.frot+(ang-shStart.ang);
     fi.x=shStart.fx+(mid.x-shStart.midX);
     fi.y=shStart.fy+(mid.y-shStart.midY);
     renderSheetToCanvas(pv,L,page,pvK,true);
   }
+  $('#ctxSize').value=Math.round(fi.w);$('#ctxSizeV').textContent=Math.round(fi.w)+' мм';
 });
 
 ['pointerup','pointercancel'].forEach(t=>pv.addEventListener(t,e=>{
   shPts.delete(e.pointerId);
-  if(shPts.size===0&&shStart){shMode=null;shStart=null;persistFree()}
+  if(shPts.size===1&&shStart){
+    const[rx,ry]=[...shPts.values()][0];
+    const pt=canvasToMM(rx,ry);
+    const fi=shStart.fi;
+    shMode='move';
+    shStart={fi,mx:pt.x,my:pt.y,fx:fi.x,fy:fi.y,fw:fi.w,fh:fi.h,frot:fi.rot||0};
+  }else if(shPts.size===0&&shStart){
+    shMode=null;shStart=null;persistFree();
+  }
 }));
+
+$('#ctxSize').oninput=e=>{
+  const f=getSelFree();if(!f)return;
+  const nw=parseFloat(e.target.value),asp=f.w/Math.max(1,f.h);
+  f.w=nw;f.h=Math.round(nw/asp*10)/10;
+  $('#ctxSizeV').textContent=Math.round(nw)+' мм';
+  renderSheetToCanvas(pv,L,page,pvK,true);
+};
+$('#ctxSize').onchange=()=>persistFree();
 
 /* Context bar actions */
 const getSelFree=()=>freeItems.find(f=>f.id===selectedFreeId);
