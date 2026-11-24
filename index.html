@@ -26,7 +26,9 @@
   }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;overscroll-behavior-y:contain;overflow-x:hidden;width:100%;touch-action:pan-x pan-y}
+html{margin:0;padding:0;overscroll-behavior-y:contain;width:100%;touch-action:pan-y}
+html,body{margin:0;padding:0}
+body{overflow-x:clip;width:100%;touch-action:pan-y}
 button,a,label,input,select{touch-action:manipulation}
 #ptr{position:fixed;left:50%;top:0;z-index:50;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:var(--card);box-shadow:0 4px 14px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:var(--ac);font-size:20px;transform:translateY(-60px);opacity:0;pointer-events:none}
 #ptr.go{transition:transform .2s,opacity .2s}
@@ -1601,22 +1603,24 @@ document.addEventListener('touchmove',e=>{
 [ec,fc].forEach(el=>['touchstart','touchmove'].forEach(ev=>el.addEventListener(ev,e=>{if(e.cancelable)e.preventDefault()},{passive:false})));
 
 (()=>{
-  const ptr=$('#ptr');let sy=0,dy=0,act=false;
+  const ptr=$('#ptr');let sx=0,sy=0,dy=0,act=false;
   document.addEventListener('touchstart',e=>{
     if(e.touches.length!==1||window.scrollY>2){act=false;return}
     const t=e.target;
     if(t.closest('#pvCanvas,#stage,.modal,#ec,#fc,input[type=range]')){act=false;return}
-    sy=e.touches[0].clientY;dy=0;act=true;ptr.classList.remove('go','spin');
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;dy=0;act=true;ptr.classList.remove('go','spin');
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!act||e.touches.length!==1)return;
     if(window.scrollY>2){act=false;return}
+    const dx=e.touches[0].clientX-sx;
     dy=e.touches[0].clientY-sy;
-    if(dy>6){
+    if(dy<-4||Math.abs(dx)>Math.abs(dy)*1.2){act=false;return}
+    if(dy>14){
       if(e.cancelable)e.preventDefault();
-      const y=Math.min(72,dy*.55)-48;
+      const y=Math.min(72,(dy-10)*.55)-48;
       ptr.style.transform=`translateY(${y}px) rotate(${dy*2.2}deg)`;
-      ptr.style.opacity=Math.min(1,dy/75);
+      ptr.style.opacity=Math.min(1,(dy-10)/70);
     }
   },{passive:false});
   const end=()=>{
