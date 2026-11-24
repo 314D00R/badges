@@ -1,5 +1,5 @@
 // Сначала сеть (всегда свежая версия), если сети нет — берём из кеша.
-const C = 'badges-v5';
+const C = 'badges-v6';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
